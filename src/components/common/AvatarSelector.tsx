@@ -41,7 +41,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ currentAvatar, o
   };
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col sm:flex-row items-start gap-6">
       <div className="flex-shrink-0">
         {currentAvatar ? (
           <img src={currentAvatar} alt="Avatar" className="h-24 w-24 rounded-full object-cover border-2 border-gray-200" />
@@ -52,8 +52,8 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({ currentAvatar, o
         )}
       </div>
 
-      <div className="flex-1">
-        <div className="flex gap-2 mb-4">
+      <div className="flex-1 w-full">
+        <div className="flex flex-wrap gap-2 mb-4">
           <button
             type="button"
             onClick={() => setAvatarMode('upload')}

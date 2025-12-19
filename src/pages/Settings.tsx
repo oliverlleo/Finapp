@@ -74,13 +74,13 @@ export const Settings: React.FC = () => {
 
       {/* User Profile Section */}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-border bg-muted/30">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-border bg-muted/30">
           <h3 className="text-lg font-semibold text-foreground">Seu Perfil</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Atualize suas informações pessoais.
           </p>
         </div>
-        <div className="px-6 py-6">
+        <div className="p-4 sm:p-6">
           <form onSubmit={handleUpdateProfile} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-foreground">Nome Completo</label>
