@@ -30,6 +30,8 @@ interface FinanceState {
   createWorkspace: (name: string) => Promise<{ error?: any; data?: any }>;
   createTransaction: (transaction: Omit<Transaction, 'id' | 'workspaceId' | 'userId'>) => Promise<void>;
   createCard: (card: Omit<Card, 'id' | 'workspaceId'>) => Promise<void>;
+  updateCard: (id: string, card: Partial<Card>) => Promise<void>;
+  deleteCard: (id: string) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   createBudget: (budget: Omit<Budget, 'id' | 'workspaceId'>) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
@@ -371,31 +373,68 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     }
   },
 
+  updateCard: async (id, card) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error } = await supabase
+      .from('accounts')
+      .update({
+        name: card.name,
+        credit_limit: card.limit,
+        closing_day: card.closingDay,
+        due_day: card.dueDay,
+        initial_balance: card.initialBalance
+      })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (!error) {
+      get().fetchInitialData();
+    } else {
+      console.error('Erro ao atualizar cartão:', error);
+      alert('Erro ao atualizar cartão.');
+    }
+  },
+
+  deleteCard: async (id) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error, count } = await supabase
+      .from('accounts')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (error) {
+      console.error('Erro ao deletar cartão:', error);
+      alert('Erro ao apagar cartão.');
+      return;
+    }
+
+    if (count !== null && count > 0) {
+      set(state => ({
+        cards: state.cards.filter(c => c.id !== id)
+      }));
+    } else {
+      alert('Não foi possível apagar o cartão. Verifique se você tem permissão.');
+    }
+  },
+
   deleteTransaction: async (id) => {
     const { currentWorkspaceId } = get();
     if (!currentWorkspaceId) return;
 
-    // Tentativa 1: Apagar com filtro de workspace (Mais seguro)
-    let { error, count } = await supabase
+    const { error, count } = await supabase
       .from('transactions')
       .delete({ count: 'exact' })
       .eq('id', id)
       .eq('workspace_id', currentWorkspaceId);
 
-    // Tentativa 2: Fallback sem filtro de workspace (Caso a politica RLS seja diferente)
-    if (!error && (count === null || count === 0)) {
-      const retry = await supabase
-        .from('transactions')
-        .delete({ count: 'exact' })
-        .eq('id', id);
-
-      error = retry.error;
-      count = retry.count;
-    }
-
     if (error) {
       console.error('Erro ao deletar transação:', error);
-      alert('Erro ao apagar transação. Verifique o console ou tente novamente.');
+      alert('Erro ao apagar transação. Verifique o console.');
       return;
     }
 
@@ -404,7 +443,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         transactions: state.transactions.filter(t => t.id !== id)
       }));
     } else {
-      alert('Não foi possível apagar a transação. Verifique suas permissões ou se o item já foi removido.');
+      alert('Não foi possível apagar a transação. Verifique se você tem permissão.');
     }
   },
 
@@ -433,25 +472,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     const { currentWorkspaceId } = get();
     if (!currentWorkspaceId) return;
 
-    let { error, count } = await supabase
+    const { error, count } = await supabase
       .from('budgets')
       .delete({ count: 'exact' })
       .eq('id', id)
       .eq('workspace_id', currentWorkspaceId);
 
-    if (!error && (count === null || count === 0)) {
-      const retry = await supabase
-        .from('budgets')
-        .delete({ count: 'exact' })
-        .eq('id', id);
-
-      error = retry.error;
-      count = retry.count;
-    }
-
     if (error) {
       console.error('Erro ao deletar orçamento:', error);
-      alert('Erro ao apagar orçamento. Verifique o console ou tente novamente.');
+      alert('Erro ao apagar orçamento.');
       return;
     }
 
@@ -460,7 +489,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         budgets: state.budgets.filter(b => b.id !== id)
       }));
     } else {
-      alert('Não foi possível apagar o orçamento. Verifique suas permissões.');
+      alert('Não foi possível apagar o orçamento. Verifique se você tem permissão.');
     }
   },
 
