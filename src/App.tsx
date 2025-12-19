@@ -31,7 +31,8 @@ const ProtectedRoute = () => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      {/* AQUI ESTÁ A CORREÇÃO: basename="/Finapp" */}
+      <BrowserRouter basename="/Finapp">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
