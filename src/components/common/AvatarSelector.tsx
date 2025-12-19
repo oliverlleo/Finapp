@@ -4,16 +4,24 @@ import { clsx } from 'clsx';
 import { useFinanceStore } from '../../store/useFinanceStore';
 
 const GENERIC_AVATARS = [
-  "https://images.unsplash.com/photo-1750535135593-3a8e5def331d?w=400&q=80",
-  "https://images.unsplash.com/photo-1750535135451-7c20e24b60c1?w=400&q=80",
-  "https://images.unsplash.com/photo-1750535135733-4ade39b4d487?w=400&q=80",
-  "https://images.unsplash.com/photo-1701615004837-40d8573b6652?w=400&q=80",
-  "https://images.unsplash.com/photo-1651346158507-a2810590687f?w=400&q=80",
-  "https://images.unsplash.com/photo-1599566147214-ce487862ea4f?w=400&q=80",
-  "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&q=80",
-  "https://images.unsplash.com/photo-1707912079134-becf5a3598e2?w=400&q=80",
-  "https://images.unsplash.com/photo-1706606999710-72658165a73d?w=400&q=80",
-  "https://images.unsplash.com/photo-1732020858816-93c130ab8f49?w=400&q=80"
+  // Female (Notionists Style)
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Felix",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Aneka",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Lola",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Molly",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Coco",
+  // Male (Notionists Style)
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Jack",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Leo",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Max",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Bear",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Oscar",
+  // Neutral (Bottts Style - Robots/Neutral)
+  "https://api.dicebear.com/9.x/bottts/svg?seed=Sky",
+  "https://api.dicebear.com/9.x/bottts/svg?seed=Echo",
+  "https://api.dicebear.com/9.x/bottts/svg?seed=Jazz",
+  "https://api.dicebear.com/9.x/bottts/svg?seed=Pixel",
+  "https://api.dicebear.com/9.x/bottts/svg?seed=Data"
 ];
 
 interface AvatarSelectorProps {
