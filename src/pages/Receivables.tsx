@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { Plus, Trash2, CheckCircle, Clock, Calendar, Repeat, User, Paperclip, ArrowDownCircle, CheckSquare, Square } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Clock, Calendar, Repeat, User, Paperclip, ArrowDownCircle, CheckSquare, Square, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { clsx } from 'clsx';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 
 export const Receivables: React.FC = () => {
-  const { getWorkspaceTransactions, deleteTransaction, createTransaction, categories, getCurrentWorkspace, uploadAttachment, toggleTransactionStatus } = useFinanceStore();
+  const { getWorkspaceTransactions, deleteTransaction, createTransaction, updateTransaction, categories, getCurrentWorkspace, uploadAttachment, toggleTransactionStatus } = useFinanceStore();
   const transactions = getWorkspaceTransactions().filter(t => t.type === 'income');
   const workspace = getCurrentWorkspace();
   const members = workspace?.members || [];
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     description: '',
@@ -36,6 +37,7 @@ export const Receivables: React.FC = () => {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const handleOpenSalary = () => {
+    setEditingId(null);
     setFormData({
       description: 'Salário',
       amount: '',
@@ -50,6 +52,38 @@ export const Receivables: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setFormData({
+      description: '',
+      amount: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      categoryId: '',
+      isRecurring: false,
+      recurrenceFrequency: 'monthly',
+      beneficiaryId: '',
+      attachmentUrl: '',
+      isReceived: true
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (tx: any) => {
+    setEditingId(tx.id);
+    setFormData({
+      description: tx.description,
+      amount: String(tx.amount),
+      date: tx.date,
+      categoryId: tx.categoryId,
+      isRecurring: tx.isRecurring || false,
+      recurrenceFrequency: tx.recurrenceFrequency || 'monthly',
+      beneficiaryId: tx.beneficiaryId || '',
+      attachmentUrl: tx.attachmentUrl || '',
+      isReceived: tx.status === 'completed'
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.categoryId) {
@@ -57,20 +91,37 @@ export const Receivables: React.FC = () => {
       return;
     }
 
-    await createTransaction({
-      description: formData.description,
-      amount: Number(formData.amount),
-      date: formData.date,
-      type: 'income',
-      categoryId: formData.categoryId,
-      status: formData.isReceived ? 'completed' : 'pending',
-      paymentMethod: 'cash',
-      isRecurring: formData.isRecurring,
-      recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
-      beneficiaryId: formData.beneficiaryId || undefined,
-      attachmentUrl: formData.attachmentUrl
-    });
+    if (editingId) {
+      await updateTransaction(editingId, {
+        description: formData.description,
+        amount: Number(formData.amount),
+        date: formData.date,
+        type: 'income',
+        categoryId: formData.categoryId,
+        status: formData.isReceived ? 'completed' : 'pending',
+        isRecurring: formData.isRecurring,
+        recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
+        beneficiaryId: formData.beneficiaryId || undefined,
+        attachmentUrl: formData.attachmentUrl
+      });
+    } else {
+      await createTransaction({
+        description: formData.description,
+        amount: Number(formData.amount),
+        date: formData.date,
+        type: 'income',
+        categoryId: formData.categoryId,
+        status: formData.isReceived ? 'completed' : 'pending',
+        paymentMethod: 'cash',
+        isRecurring: formData.isRecurring,
+        recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
+        beneficiaryId: formData.beneficiaryId || undefined,
+        attachmentUrl: formData.attachmentUrl
+      });
+    }
+
     setIsModalOpen(false);
+    setEditingId(null);
   };
 
   return (
@@ -93,20 +144,7 @@ export const Receivables: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setFormData({
-                description: '',
-                amount: '',
-                date: format(new Date(), 'yyyy-MM-dd'),
-                categoryId: '',
-                isRecurring: false,
-                recurrenceFrequency: 'monthly',
-                beneficiaryId: '',
-                attachmentUrl: '',
-                isReceived: true
-              });
-              setIsModalOpen(true);
-            }}
+            onClick={handleOpenNew}
             className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus:outline-none transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -208,7 +246,17 @@ export const Receivables: React.FC = () => {
                     {transaction.status === 'completed' ? 'Recebido' : 'Receber'}
                   </button>
                   <button
-                    onClick={() => deleteTransaction(transaction.id)}
+                    onClick={() => handleOpenEdit(transaction)}
+                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Tem certeza que deseja apagar?')) {
+                        deleteTransaction(transaction.id);
+                      }
+                    }}
                     className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -289,12 +337,24 @@ export const Receivables: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => deleteTransaction(transaction.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenEdit(transaction)}
+                          className="text-muted-foreground hover:text-primary transition-colors p-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja apagar?')) {
+                              deleteTransaction(transaction.id);
+                            }
+                          }}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -332,9 +392,11 @@ export const Receivables: React.FC = () => {
                 <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-card px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-lg sm:p-6 border border-border">
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <h3 className="text-lg font-medium leading-6 text-foreground">Nova Receita</h3>
+                      <h3 className="text-lg font-medium leading-6 text-foreground">
+                        {editingId ? 'Editar Receita' : 'Nova Receita'}
+                      </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Adicione uma nova receita ou recebimento.
+                        {editingId ? 'Altere os dados da receita.' : 'Adicione uma nova receita ou recebimento.'}
                       </p>
                     </div>
 
