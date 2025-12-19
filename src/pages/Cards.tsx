@@ -3,6 +3,7 @@ import { useFinanceStore } from '../store/useFinanceStore';
 import { Plus, CreditCard as CreditCardIcon } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { getOpenInvoiceAmount, getAvailableLimit } from '../utils/cardUtils';
 
 export const Cards: React.FC = () => {
   const { getWorkspaceCards, getWorkspaceTransactions, createCard } = useFinanceStore();
@@ -33,14 +34,6 @@ export const Cards: React.FC = () => {
     setFormData({ name: '', limit: '', closingDay: '1', dueDay: '10', initialBalance: '0' });
   };
 
-  const getCardUsage = (cardId: string) => {
-    // Simple calculation: sum of all expenses on this card
-    // In a real app, this would be filtered by invoice period
-    return transactions
-      .filter(t => t.cardId === cardId && t.type === 'expense')
-      .reduce((acc, t) => acc + t.amount, 0);
-  };
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -62,8 +55,8 @@ export const Cards: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => {
-          const usage = getCardUsage(card.id);
-          const available = card.limit - usage;
+          const usage = getOpenInvoiceAmount(transactions, card.id, card.closingDay || 1);
+          const available = getAvailableLimit(card.limit, transactions, card.id, card.closingDay || 1);
           const usagePercentage = Math.min((usage / card.limit) * 100, 100);
 
           return (
@@ -133,7 +126,7 @@ export const Cards: React.FC = () => {
           </Transition.Child>
 
           <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
@@ -143,7 +136,7 @@ export const Cards: React.FC = () => {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-card px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6 border border-border">
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-card px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-sm sm:p-6 border border-border">
                   <Dialog.Title className="text-lg font-medium leading-6 text-foreground mb-4">Novo Cartão</Dialog.Title>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>

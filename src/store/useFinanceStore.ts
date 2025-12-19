@@ -147,6 +147,12 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       .select('*')
       .eq('workspace_id', currentWorkspaceId);
 
+    // Fetch Import Rules
+    const { data: rulesData } = await supabase
+      .from('import_rules')
+      .select('*')
+      .eq('workspace_id', currentWorkspaceId);
+
     // Fetch Members
     const { data: membersData } = await supabase
       .from('workspace_members')
@@ -224,6 +230,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       rollover: b.rollover
     }));
 
+    const mappedImportRules: ImportRule[] = (rulesData || []).map(r => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      pattern: r.pattern,
+      categoryId: r.category_id
+    }));
+
     // Generate Notifications
     const notifications: Notification[] = [];
     const today = new Date();
@@ -268,6 +281,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       cards: mappedCards,
       transactions: mappedTransactions,
       budgets: mappedBudgets,
+      importRules: mappedImportRules,
       notifications,
       loading: false
     });

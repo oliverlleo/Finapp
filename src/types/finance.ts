@@ -77,6 +77,13 @@ export interface WorkspaceInvite {
   status: 'pending' | 'accepted' | 'rejected';
 }
 
+export interface ImportRule {
+  id: string;
+  workspaceId: string;
+  pattern: string;
+  categoryId: string;
+}
+
 export interface User {
   id: string;
   name: string;
