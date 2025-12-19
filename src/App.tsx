@@ -12,6 +12,7 @@ import { JoinWorkspace } from './pages/JoinWorkspace';
 import { Receivables } from './pages/Receivables';
 import { Categories } from './pages/Categories';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { InstallPrompt } from './components/InstallPrompt';
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -31,6 +32,7 @@ const ProtectedRoute = () => {
 function App() {
   return (
     <AuthProvider>
+      <InstallPrompt />
       {/* AQUI ESTÁ A CORREÇÃO: basename="/Finapp" */}
       <BrowserRouter basename="/Finapp">
         <Routes>
