@@ -37,6 +37,10 @@ interface FinanceState {
   deleteBudget: (id: string) => Promise<void>;
   toggleTransactionStatus: (id: string, currentStatus: 'pending' | 'completed') => Promise<void>;
   createCategory: (category: Omit<Category, 'id' | 'workspaceId'>) => Promise<void>;
+  updateCategory: (id: string, category: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  updateTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
+  updateBudget: (id: string, budget: Partial<Budget>) => Promise<void>;
   createInvite: (email: string, role: 'admin' | 'member') => Promise<void>;
   updateProfile: (name: string, avatarUrl?: string) => Promise<void>;
   updateMemberProfile: (userId: string, name: string, avatarUrl?: string) => Promise<void>;
@@ -528,6 +532,106 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
     if (data && !error) {
       get().fetchInitialData();
+    }
+  },
+
+  updateCategory: async (id, category) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error } = await supabase
+      .from('categories')
+      .update({
+        name: category.name,
+        type: category.type,
+        color: category.color,
+        icon: category.icon,
+        parent_id: category.parentId
+      })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (!error) {
+      get().fetchInitialData();
+    } else {
+      console.error('Erro ao atualizar categoria:', error);
+      alert('Erro ao atualizar categoria.');
+    }
+  },
+
+  deleteCategory: async (id) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error, count } = await supabase
+      .from('categories')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (error) {
+      console.error('Erro ao deletar categoria:', error);
+      alert('Erro ao apagar categoria. Verifique se existem transações vinculadas.');
+      return;
+    }
+
+    if (count !== null && count > 0) {
+      set(state => ({
+        categories: state.categories.filter(c => c.id !== id)
+      }));
+    } else {
+      alert('Não foi possível apagar a categoria. Verifique suas permissões.');
+    }
+  },
+
+  updateTransaction: async (id, transaction) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error } = await supabase
+      .from('transactions')
+      .update({
+        description: transaction.description,
+        amount: transaction.amount,
+        date: transaction.date,
+        type: transaction.type,
+        category_id: transaction.categoryId,
+        status: transaction.status,
+        is_recurring: transaction.isRecurring,
+        recurrence_frequency: transaction.recurrenceFrequency,
+        attachment_url: transaction.attachmentUrl,
+        beneficiary_id: transaction.beneficiaryId
+      })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (!error) {
+      get().fetchInitialData();
+    } else {
+      console.error('Erro ao atualizar transação:', error);
+      alert('Erro ao atualizar transação.');
+    }
+  },
+
+  updateBudget: async (id, budget) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error } = await supabase
+      .from('budgets')
+      .update({
+        amount: budget.amount,
+        period: budget.period,
+        rollover: budget.rollover
+      })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (!error) {
+      get().fetchInitialData();
+    } else {
+      console.error('Erro ao atualizar orçamento:', error);
+      alert('Erro ao atualizar orçamento.');
     }
   },
 

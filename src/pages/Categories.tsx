@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { Plus, Trash2, FolderPlus } from 'lucide-react';
+import { Plus, Trash2, FolderPlus, Pencil } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { Fragment } from 'react';
 
 export const Categories: React.FC = () => {
-  const { categories, createCategory } = useFinanceStore();
+  const { categories, createCategory, updateCategory, deleteCategory } = useFinanceStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'expense',
@@ -15,16 +16,45 @@ export const Categories: React.FC = () => {
     parentId: ''
   });
 
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setFormData({ name: '', type: 'expense', color: '#000000', parentId: '' });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (category: any) => {
+    setEditingId(category.id);
+    setFormData({
+      name: category.name,
+      type: category.type,
+      color: category.color,
+      parentId: category.parentId || ''
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createCategory({
-      name: formData.name,
-      type: formData.type as any,
-      color: formData.color,
-      parentId: formData.parentId || undefined
-    });
+
+    if (editingId) {
+      await updateCategory(editingId, {
+        name: formData.name,
+        type: formData.type as any,
+        color: formData.color,
+        parentId: formData.parentId || undefined
+      });
+    } else {
+      await createCategory({
+        name: formData.name,
+        type: formData.type as any,
+        color: formData.color,
+        parentId: formData.parentId || undefined
+      });
+    }
+
     setIsModalOpen(false);
     setFormData({ name: '', type: 'expense', color: '#000000', parentId: '' });
+    setEditingId(null);
   };
 
   const rootCategories = categories.filter(c => !c.parentId);
@@ -40,7 +70,7 @@ export const Categories: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenNew}
           className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus:outline-none transition-colors"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -59,9 +89,24 @@ export const Categories: React.FC = () => {
                   <div className="h-4 w-4 rounded-full ring-1 ring-border" style={{ backgroundColor: category.color }} />
                   <span className="font-medium text-foreground">{category.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {category.type === 'income' ? 'Receita' : 'Despesa'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(category)}
+                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Tem certeza? Isso não apagará as transações desta categoria.')) {
+                        deleteCategory(category.id);
+                      }
+                    }}
+                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
               {subcategories.length > 0 && (
                 <div className="pl-4 space-y-2 border-l-2 border-border ml-2">
@@ -70,6 +115,24 @@ export const Categories: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="h-3 w-3 rounded-full ring-1 ring-border" style={{ backgroundColor: sub.color }} />
                         <span className="text-foreground">{sub.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenEdit(sub)}
+                          className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Tem certeza?')) {
+                              deleteCategory(sub.id);
+                            }
+                          }}
+                          className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -110,7 +173,27 @@ export const Categories: React.FC = () => {
                         {category.type === 'income' ? 'Receita' : 'Despesa'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        <div className="h-4 w-4 rounded-full ring-1 ring-border" style={{ backgroundColor: category.color }} />
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-4 rounded-full ring-1 ring-border" style={{ backgroundColor: category.color }} />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenEdit(category)}
+                              className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Tem certeza que deseja apagar esta categoria?')) {
+                                  deleteCategory(category.id);
+                                }
+                              }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                     {subcategories.map(sub => (
@@ -123,7 +206,27 @@ export const Categories: React.FC = () => {
                           {sub.type === 'income' ? 'Receita' : 'Despesa'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          <div className="h-4 w-4 rounded-full ring-1 ring-border" style={{ backgroundColor: sub.color }} />
+                          <div className="flex items-center justify-between">
+                            <div className="h-4 w-4 rounded-full ring-1 ring-border" style={{ backgroundColor: sub.color }} />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenEdit(sub)}
+                                className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Tem certeza que deseja apagar esta categoria?')) {
+                                    deleteCategory(sub.id);
+                                  }
+                                }}
+                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -161,7 +264,9 @@ export const Categories: React.FC = () => {
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
                 <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-card px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-sm sm:p-6 border border-border">
-                  <Dialog.Title className="text-lg font-medium leading-6 text-foreground mb-4">Nova Categoria</Dialog.Title>
+                  <Dialog.Title className="text-lg font-medium leading-6 text-foreground mb-4">
+                    {editingId ? 'Editar Categoria' : 'Nova Categoria'}
+                  </Dialog.Title>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground">Nome</label>

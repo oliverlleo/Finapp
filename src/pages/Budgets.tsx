@@ -1,32 +1,60 @@
 import React, { useState } from 'react';
 import { useFinanceStore } from '../store/useFinanceStore';
-import { Plus, Trash2, Target } from 'lucide-react';
+import { Plus, Trash2, Target, Pencil } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Fragment } from 'react';
 
 export const Budgets: React.FC = () => {
-  const { getWorkspaceBudgets, getWorkspaceTransactions, categories, createBudget, deleteBudget } = useFinanceStore();
+  const { getWorkspaceBudgets, getWorkspaceTransactions, categories, createBudget, updateBudget, deleteBudget } = useFinanceStore();
   const budgets = getWorkspaceBudgets();
   const transactions = getWorkspaceTransactions();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     categoryId: '',
     amount: '',
     period: 'monthly'
   });
 
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setFormData({ categoryId: '', amount: '', period: 'monthly' });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (budget: any) => {
+    setEditingId(budget.id);
+    setFormData({
+      categoryId: budget.categoryId,
+      amount: String(budget.amount),
+      period: budget.period || 'monthly'
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createBudget({
-      categoryId: formData.categoryId,
-      amount: Number(formData.amount),
-      period: formData.period as 'monthly' | 'yearly'
-    });
+
+    if (editingId) {
+      await updateBudget(editingId, {
+        amount: Number(formData.amount),
+        period: formData.period as 'monthly' | 'yearly'
+      });
+    } else {
+      await createBudget({
+        categoryId: formData.categoryId,
+        amount: Number(formData.amount),
+        period: formData.period as 'monthly' | 'yearly',
+        rollover: false
+      });
+    }
+
     setIsModalOpen(false);
     setFormData({ categoryId: '', amount: '', period: 'monthly' });
+    setEditingId(null);
   };
 
   const getBudgetProgress = (categoryId: string, amount: number) => {
@@ -57,7 +85,7 @@ export const Budgets: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenNew}
           className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus:outline-none transition-colors"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -80,12 +108,24 @@ export const Budgets: React.FC = () => {
                   </div>
                   <h3 className="ml-3 text-lg font-semibold text-foreground truncate">{category?.name}</h3>
                 </div>
-                <button 
-                  onClick={() => deleteBudget(budget.id)} 
-                  className="text-muted-foreground hover:text-destructive transition-colors p-2 hover:bg-destructive/10 rounded-md flex-shrink-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenEdit(budget)}
+                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Tem certeza que deseja apagar esta meta?')) {
+                        deleteBudget(budget.id);
+                      }
+                    }}
+                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <div className="px-6 py-6 flex-1">
                 <div className="flex justify-between text-sm font-medium mb-2">
@@ -141,15 +181,18 @@ export const Budgets: React.FC = () => {
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
                 <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-card px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-sm sm:p-6 border border-border">
-                  <Dialog.Title className="text-lg font-medium leading-6 text-foreground mb-4">Nova Meta</Dialog.Title>
+                  <Dialog.Title className="text-lg font-medium leading-6 text-foreground mb-4">
+                    {editingId ? 'Editar Meta' : 'Nova Meta'}
+                  </Dialog.Title>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground">Categoria</label>
                       <select
+                        disabled={!!editingId}
                         value={formData.categoryId}
                         onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-input bg-background text-foreground shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="mt-1 block w-full rounded-md border-input bg-background text-foreground shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border disabled:opacity-50"
                         required
                       >
                         <option value="">Selecione...</option>
