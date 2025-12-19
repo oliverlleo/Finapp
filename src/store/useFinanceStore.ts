@@ -372,12 +372,21 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   deleteTransaction: async (id) => {
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', id);
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
 
-    if (!error) {
+    const { error, count } = await supabase
+      .from('transactions')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (error) {
+      console.error('Erro ao deletar transação:', error);
+      return;
+    }
+
+    if (count !== null && count > 0) {
       set(state => ({
         transactions: state.transactions.filter(t => t.id !== id)
       }));
@@ -406,12 +415,21 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   deleteBudget: async (id) => {
-    const { error } = await supabase
-      .from('budgets')
-      .delete()
-      .eq('id', id);
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
 
-    if (!error) {
+    const { error, count } = await supabase
+      .from('budgets')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (error) {
+      console.error('Erro ao deletar orçamento:', error);
+      return;
+    }
+
+    if (count !== null && count > 0) {
       set(state => ({
         budgets: state.budgets.filter(b => b.id !== id)
       }));
