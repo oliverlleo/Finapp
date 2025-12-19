@@ -30,6 +30,8 @@ interface FinanceState {
   createWorkspace: (name: string) => Promise<{ error?: any; data?: any }>;
   createTransaction: (transaction: Omit<Transaction, 'id' | 'workspaceId' | 'userId'>) => Promise<void>;
   createCard: (card: Omit<Card, 'id' | 'workspaceId'>) => Promise<void>;
+  updateCard: (id: string, card: Partial<Card>) => Promise<void>;
+  deleteCard: (id: string) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   createBudget: (budget: Omit<Budget, 'id' | 'workspaceId'>) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
@@ -368,6 +370,55 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
     if (data && !error) {
       get().fetchInitialData();
+    }
+  },
+
+  updateCard: async (id, card) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error } = await supabase
+      .from('accounts')
+      .update({
+        name: card.name,
+        credit_limit: card.limit,
+        closing_day: card.closingDay,
+        due_day: card.dueDay,
+        initial_balance: card.initialBalance
+      })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (!error) {
+      get().fetchInitialData();
+    } else {
+      console.error('Erro ao atualizar cartão:', error);
+      alert('Erro ao atualizar cartão.');
+    }
+  },
+
+  deleteCard: async (id) => {
+    const { currentWorkspaceId } = get();
+    if (!currentWorkspaceId) return;
+
+    const { error, count } = await supabase
+      .from('accounts')
+      .delete({ count: 'exact' })
+      .eq('id', id)
+      .eq('workspace_id', currentWorkspaceId);
+
+    if (error) {
+      console.error('Erro ao deletar cartão:', error);
+      alert('Erro ao apagar cartão.');
+      return;
+    }
+
+    if (count !== null && count > 0) {
+      set(state => ({
+        cards: state.cards.filter(c => c.id !== id)
+      }));
+    } else {
+      alert('Não foi possível apagar o cartão. Verifique se você tem permissão.');
     }
   },
 
