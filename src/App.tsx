@@ -12,6 +12,7 @@ import { JoinWorkspace } from './pages/JoinWorkspace';
 import { Receivables } from './pages/Receivables';
 import { Categories } from './pages/Categories';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { OfflineWarning } from './components/common/OfflineWarning';
 
 // Protected Route Component
 const ProtectedRoute = () => {
@@ -32,6 +33,7 @@ function App() {
   return (
     <AuthProvider>
       {/* AQUI ESTÁ A CORREÇÃO: basename="/Finapp" */}
+      <OfflineWarning />
       <BrowserRouter basename="/Finapp">
         <Routes>
           <Route path="/login" element={<Login />} />
