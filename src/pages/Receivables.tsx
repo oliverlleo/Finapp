@@ -253,7 +253,10 @@ export const Receivables: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm('Tem certeza que deseja apagar?')) {
+                      if (transaction.isRecurring) {
+                        const deleteAll = window.confirm('Esta é uma receita recorrente. Deseja apagar TODAS as repetições? (OK = Todas, Cancelar = Apenas esta)');
+                        deleteTransaction(transaction.id, deleteAll);
+                      } else if (window.confirm('Tem certeza que deseja apagar?')) {
                         deleteTransaction(transaction.id);
                       }
                     }}
@@ -346,7 +349,10 @@ export const Receivables: React.FC = () => {
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm('Tem certeza que deseja apagar?')) {
+                            if (transaction.isRecurring) {
+                              const deleteAll = window.confirm('Esta é uma receita recorrente. Deseja apagar TODAS as repetições? (OK = Todas, Cancelar = Apenas esta)');
+                              deleteTransaction(transaction.id, deleteAll);
+                            } else if (window.confirm('Tem certeza que deseja apagar?')) {
                               deleteTransaction(transaction.id);
                             }
                           }}

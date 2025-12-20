@@ -194,7 +194,14 @@ export const Transactions: React.FC = () => {
                     {transaction.status === 'completed' ? 'Pago' : 'Pagar'}
                   </button>
                   <button
-                    onClick={() => deleteTransaction(transaction.id)}
+                    onClick={() => {
+                      if (transaction.isRecurring) {
+                        const deleteAll = window.confirm('Esta é uma transação recorrente. Deseja apagar TODAS as repetições? (OK = Todas, Cancelar = Apenas esta)');
+                        deleteTransaction(transaction.id, deleteAll);
+                      } else if (window.confirm('Tem certeza que deseja apagar?')) {
+                        deleteTransaction(transaction.id);
+                      }
+                    }}
                     className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -315,7 +322,14 @@ export const Transactions: React.FC = () => {
                     </td>
                     <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                       <button
-                        onClick={() => deleteTransaction(transaction.id)}
+                        onClick={() => {
+                          if (transaction.isRecurring) {
+                            const deleteAll = window.confirm('Esta é uma transação recorrente. Deseja apagar TODAS as repetições? (OK = Todas, Cancelar = Apenas esta)');
+                            deleteTransaction(transaction.id, deleteAll);
+                          } else if (window.confirm('Tem certeza que deseja apagar?')) {
+                            deleteTransaction(transaction.id);
+                          }
+                        }}
                         className="text-muted-foreground hover:text-destructive transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />

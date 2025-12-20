@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Transaction, Workspace, User, Card, Category, Budget, WorkspaceInvite } from '../types/finance';
 import { supabase } from '../lib/supabase';
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, isBefore, isSameDay } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, isBefore, isSameDay, addMonths, differenceInMonths, addWeeks, addYears } from 'date-fns';
 
 export interface Notification {
   id: string;
@@ -325,28 +325,85 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     const { currentWorkspaceId, user } = get();
     if (!currentWorkspaceId || !user) return;
 
+    const baseTx = {
+      workspace_id: currentWorkspaceId,
+      description: transaction.description,
+      amount: transaction.amount,
+      type: transaction.type,
+      category_id: transaction.categoryId,
+      account_id: transaction.accountId || transaction.cardId || null,
+      status: transaction.status,
+      user_id: user.id,
+      is_recurring: transaction.isRecurring,
+      recurrence_frequency: transaction.recurrenceFrequency,
+      recurrence_end_date: transaction.recurrenceEndDate,
+      beneficiary_id: transaction.beneficiaryId,
+      attachment_url: transaction.attachmentUrl,
+      tags: transaction.tags,
+      transfer_account_id: transaction.transferAccountId,
+      recurring_group_id: transaction.isRecurring ? crypto.randomUUID() : null
+    };
+
+    const transactionsToInsert = [];
+
+    if (transaction.isRecurring) {
+      const startDate = parseISO(transaction.date);
+      let loopLimit = 60; // Default 5 years (60 months) if no end date
+
+      if (transaction.recurrenceEndDate) {
+        const endDate = parseISO(transaction.recurrenceEndDate);
+
+        if (transaction.recurrenceFrequency === 'weekly') {
+           // Approximate weeks
+           loopLimit = 260; // 5 years in weeks
+        } else if (transaction.recurrenceFrequency === 'yearly') {
+           loopLimit = 5;
+        } else {
+           // Monthly
+           const monthsDiff = differenceInMonths(endDate, startDate);
+           loopLimit = monthsDiff + 1; // +1 to include the last month
+        }
+      }
+
+      for (let i = 0; i < loopLimit; i++) {
+        let nextDate = startDate;
+
+        if (transaction.recurrenceFrequency === 'weekly') {
+          nextDate = addWeeks(startDate, i);
+        } else if (transaction.recurrenceFrequency === 'yearly') {
+          nextDate = addYears(startDate, i);
+        } else {
+          // Monthly default
+          nextDate = addMonths(startDate, i);
+        }
+
+        // Stop if we have an end date and we passed it
+        if (transaction.recurrenceEndDate) {
+           const endDate = parseISO(transaction.recurrenceEndDate);
+           if (isBefore(endDate, nextDate)) break;
+        }
+
+        transactionsToInsert.push({
+          ...baseTx,
+          date: format(nextDate, 'yyyy-MM-dd'),
+          // Only the first one respects the initial status (e.g. Paid).
+          // Future ones should generally be Pending unless specified otherwise.
+          // However, for "Salario", usually user wants them all generated.
+          // Let's keep status consistent for now as requested "aparecer de forma recorrente".
+          status: i === 0 ? baseTx.status : 'pending'
+        });
+      }
+    } else {
+      transactionsToInsert.push({
+        ...baseTx,
+        date: transaction.date
+      });
+    }
+
     const { data, error } = await supabase
       .from('transactions')
-      .insert({
-        workspace_id: currentWorkspaceId,
-        description: transaction.description,
-        amount: transaction.amount,
-        date: transaction.date,
-        type: transaction.type,
-        category_id: transaction.categoryId,
-        account_id: transaction.accountId || transaction.cardId || null,
-        status: transaction.status,
-        user_id: user.id,
-        is_recurring: transaction.isRecurring,
-        recurrence_frequency: transaction.recurrenceFrequency,
-        recurrence_end_date: transaction.recurrenceEndDate,
-        beneficiary_id: transaction.beneficiaryId,
-        attachment_url: transaction.attachmentUrl,
-        tags: transaction.tags,
-        transfer_account_id: transaction.transferAccountId
-      })
-      .select()
-      .single();
+      .insert(transactionsToInsert)
+      .select();
 
     if (error) {
       console.error('Erro ao criar transação:', error);
@@ -432,15 +489,31 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     }
   },
 
-  deleteTransaction: async (id) => {
-    const { currentWorkspaceId } = get();
+  deleteTransaction: async (id, deleteAllFuture = false) => {
+    const { currentWorkspaceId, transactions } = get();
     if (!currentWorkspaceId) return;
 
-    const { error, count } = await supabase
+    const transaction = transactions.find(t => t.id === id);
+
+    let query = supabase
       .from('transactions')
       .delete({ count: 'exact' })
-      .eq('id', id)
       .eq('workspace_id', currentWorkspaceId);
+
+    if (deleteAllFuture && transaction?.recurring_group_id) {
+      // Delete all transactions in the group from this date onwards (or all? User asked for "apagar todas")
+      // User said: "perguntar que deletar so atual ou todas"
+      // Usually "Todas" means the whole series. "Future" means this and next.
+      // Let's implement "Delete All" for simplicity as "Future" requires date logic.
+      // Actually, standard is "This only" or "This and future".
+      // If I implement "All", I just match recurring_group_id.
+      // Let's match recurring_group_id.
+      query = query.eq('recurring_group_id', transaction.recurring_group_id);
+    } else {
+      query = query.eq('id', id);
+    }
+
+    const { error, count } = await query;
 
     if (error) {
       console.error('Erro ao deletar transação:', error);
@@ -449,9 +522,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     }
 
     if (count !== null && count > 0) {
-      set(state => ({
-        transactions: state.transactions.filter(t => t.id !== id)
-      }));
+      // Refetch to ensure clean state or filter locally
+      get().fetchInitialData();
     } else {
       alert('Não foi possível apagar a transação. Verifique se você tem permissão.');
     }

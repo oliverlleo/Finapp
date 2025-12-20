@@ -33,6 +33,7 @@ export interface Transaction {
   attachmentUrl?: string;
   tags?: string[];
   transferAccountId?: string;
+  recurring_group_id?: string;
 }
 
 export interface Account {
