@@ -348,7 +348,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       .select()
       .single();
 
-    if (data && !error) {
+    if (error) {
+      console.error('Erro ao criar transação:', error);
+      alert('Erro ao criar transação. Tente novamente.');
+    } else if (data) {
       get().fetchInitialData();
     }
   },
@@ -372,7 +375,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       .select()
       .single();
 
-    if (data && !error) {
+    if (error) {
+      console.error('Erro ao criar cartão:', error);
+      alert('Erro ao criar cartão.');
+    } else if (data) {
       get().fetchInitialData();
     }
   },
@@ -467,7 +473,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       .select()
       .single();
 
-    if (data && !error) {
+    if (error) {
+      console.error('Erro ao criar orçamento:', error);
+      alert('Erro ao criar orçamento.');
+    } else if (data) {
       get().fetchInitialData();
     }
   },
@@ -530,7 +539,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       .select()
       .single();
 
-    if (data && !error) {
+    if (error) {
+      console.error('Erro ao criar categoria:', error);
+      alert('Erro ao criar categoria.');
+    } else if (data) {
       get().fetchInitialData();
     }
   },
