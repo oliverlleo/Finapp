@@ -691,26 +691,39 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     }
   },
 
-  updateTransaction: async (id, transaction) => {
-    const { currentWorkspaceId } = get();
+  updateTransaction: async (id, transaction, updateAllFuture = false) => {
+    const { currentWorkspaceId, transactions } = get();
     if (!currentWorkspaceId) return;
 
-    const { error } = await supabase
-      .from('transactions')
-      .update({
-        description: transaction.description,
-        amount: transaction.amount,
-        date: transaction.date,
-        type: transaction.type,
-        category_id: transaction.categoryId,
-        status: transaction.status,
-        is_recurring: transaction.isRecurring,
-        recurrence_frequency: transaction.recurrenceFrequency,
-        attachment_url: transaction.attachmentUrl,
-        beneficiary_id: transaction.beneficiaryId
-      })
-      .eq('id', id)
-      .eq('workspace_id', currentWorkspaceId);
+    const originalTx = transactions.find(t => t.id === id);
+    const updates = {
+      description: transaction.description,
+      amount: transaction.amount,
+      date: transaction.date,
+      type: transaction.type,
+      category_id: transaction.categoryId,
+      status: transaction.status,
+      is_recurring: transaction.isRecurring,
+      recurrence_frequency: transaction.recurrenceFrequency,
+      attachment_url: transaction.attachmentUrl,
+      beneficiary_id: transaction.beneficiaryId
+    };
+
+    let query = supabase.from('transactions').update(updates).eq('workspace_id', currentWorkspaceId);
+
+    if (updateAllFuture && originalTx?.recurring_group_id) {
+        // Safe update: Exclude date from bulk updates to preserve the schedule
+        const { date, ...safeUpdates } = updates;
+        query = supabase.from('transactions')
+          .update(safeUpdates)
+          .eq('workspace_id', currentWorkspaceId)
+          .eq('recurring_group_id', originalTx.recurring_group_id)
+          .gte('date', originalTx.date);
+    } else {
+        query = query.eq('id', id);
+    }
+
+    const { error } = await query;
 
     if (!error) {
       get().fetchInitialData();

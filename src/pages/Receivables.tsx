@@ -96,6 +96,13 @@ export const Receivables: React.FC = () => {
     }
 
     if (editingId) {
+      const isRecurringEdit = formData.isRecurring;
+      let updateAll = false;
+
+      if (isRecurringEdit) {
+        updateAll = window.confirm('Esta é uma receita recorrente. Deseja aplicar as alterações para todas as futuras repetições? (OK = Sim, Cancelar = Apenas esta)');
+      }
+
       await updateTransaction(editingId, {
         description: formData.description,
         amount: Number(formData.amount),
@@ -108,7 +115,7 @@ export const Receivables: React.FC = () => {
         recurrenceEndDate: formData.recurrenceEndDate || undefined,
         beneficiaryId: formData.beneficiaryId || undefined,
         attachmentUrl: formData.attachmentUrl
-      });
+      }, updateAll);
     } else {
       await createTransaction({
         description: formData.description,
