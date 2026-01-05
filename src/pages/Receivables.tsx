@@ -22,6 +22,7 @@ export const Receivables: React.FC = () => {
     categoryId: '',
     isRecurring: false,
     recurrenceFrequency: 'monthly',
+    recurrenceEndDate: '',
     beneficiaryId: '',
     attachmentUrl: '',
     isReceived: true
@@ -45,6 +46,7 @@ export const Receivables: React.FC = () => {
       categoryId: categories.find(c => c.name === 'Salário' && c.type === 'income')?.id || '',
       isRecurring: true,
       recurrenceFrequency: 'monthly',
+      recurrenceEndDate: '',
       beneficiaryId: '',
       attachmentUrl: '',
       isReceived: true
@@ -61,6 +63,7 @@ export const Receivables: React.FC = () => {
       categoryId: '',
       isRecurring: false,
       recurrenceFrequency: 'monthly',
+      recurrenceEndDate: '',
       beneficiaryId: '',
       attachmentUrl: '',
       isReceived: true
@@ -77,6 +80,7 @@ export const Receivables: React.FC = () => {
       categoryId: tx.categoryId,
       isRecurring: tx.isRecurring || false,
       recurrenceFrequency: tx.recurrenceFrequency || 'monthly',
+      recurrenceEndDate: tx.recurrenceEndDate || '',
       beneficiaryId: tx.beneficiaryId || '',
       attachmentUrl: tx.attachmentUrl || '',
       isReceived: tx.status === 'completed'
@@ -101,6 +105,7 @@ export const Receivables: React.FC = () => {
         status: formData.isReceived ? 'completed' : 'pending',
         isRecurring: formData.isRecurring,
         recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
+        recurrenceEndDate: formData.recurrenceEndDate || undefined,
         beneficiaryId: formData.beneficiaryId || undefined,
         attachmentUrl: formData.attachmentUrl
       });
@@ -115,6 +120,7 @@ export const Receivables: React.FC = () => {
         paymentMethod: 'cash',
         isRecurring: formData.isRecurring,
         recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
+        recurrenceEndDate: formData.recurrenceEndDate || undefined,
         beneficiaryId: formData.beneficiaryId || undefined,
         attachmentUrl: formData.attachmentUrl
       });
@@ -532,17 +538,28 @@ export const Receivables: React.FC = () => {
                     </div>
 
                     {formData.isRecurring && (
-                      <div>
-                        <label className="block text-sm font-medium text-foreground">Frequência</label>
-                        <select
-                          value={formData.recurrenceFrequency}
-                          onChange={(e) => setFormData({ ...formData, recurrenceFrequency: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-input bg-background text-foreground shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
-                        >
-                          <option value="monthly">Mensal</option>
-                          <option value="weekly">Semanal</option>
-                          <option value="yearly">Anual</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground">Frequência</label>
+                          <select
+                            value={formData.recurrenceFrequency}
+                            onChange={(e) => setFormData({ ...formData, recurrenceFrequency: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-input bg-background text-foreground shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                          >
+                            <option value="monthly">Mensal</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="yearly">Anual</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground">Data Final (Opcional)</label>
+                          <input
+                            type="date"
+                            value={formData.recurrenceEndDate}
+                            onChange={(e) => setFormData({ ...formData, recurrenceEndDate: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-input bg-background text-foreground shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                          />
+                        </div>
                       </div>
                     )}
 
