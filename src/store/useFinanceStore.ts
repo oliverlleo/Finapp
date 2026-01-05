@@ -91,7 +91,30 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   fetchInitialData: async () => {
     set({ loading: true });
-    const { data: { user } } = await supabase.auth.getUser();
+
+    let user = null;
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      user = data.user;
+    } catch (error) {
+      console.error('Erro de autenticação/rede:', error);
+      set({
+        loading: false,
+        notifications: [
+          ...get().notifications,
+          {
+            id: 'auth-error',
+            title: 'Erro de Conexão',
+            message: 'Não foi possível conectar ao servidor. Verifique sua internet.',
+            type: 'warning',
+            read: false,
+            date: new Date().toISOString()
+          }
+        ]
+      });
+      return;
+    }
     
     if (!user) {
       set({ loading: false });
