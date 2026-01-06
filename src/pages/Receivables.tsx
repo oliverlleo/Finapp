@@ -127,7 +127,7 @@ export const Receivables: React.FC = () => {
         paymentMethod: 'cash',
         isRecurring: formData.isRecurring,
         recurrenceFrequency: formData.isRecurring ? formData.recurrenceFrequency as any : undefined,
-        recurrenceEndDate: formData.recurrenceEndDate || undefined,
+        recurrenceEndDate: formData.isRecurring ? (formData.recurrenceEndDate || undefined) : undefined,
         beneficiaryId: formData.beneficiaryId || undefined,
         attachmentUrl: formData.attachmentUrl
       });
