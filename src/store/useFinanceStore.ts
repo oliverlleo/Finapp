@@ -247,7 +247,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       beneficiaryId: t.beneficiary_id,
       attachmentUrl: t.attachment_url,
       tags: t.tags,
-      transferAccountId: t.transfer_account_id
+      transferAccountId: t.transfer_account_id,
+      recurring_group_id: t.recurring_group_id
     }));
 
     const mappedBudgets: Budget[] = (budgetsData || []).map(b => ({
@@ -845,7 +846,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             beneficiaryId: newTx.beneficiary_id,
             attachmentUrl: newTx.attachment_url,
             tags: newTx.tags,
-            transferAccountId: newTx.transfer_account_id
+            transferAccountId: newTx.transfer_account_id,
+            recurring_group_id: newTx.recurring_group_id
           }]
         }));
       })
